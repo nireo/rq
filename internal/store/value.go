@@ -21,10 +21,10 @@ func (v *Value) Encode() []byte {
 	return buf
 }
 
-func Decode(buf []byte) Value {
+func Decode(buf []byte) *Value {
 	dacks := binary.LittleEndian.Uint32(buf)
 
-	return Value{
+	return &Value{
 		Dacks: dacks,
 		Raw:   buf[dacksSize:],
 	}
