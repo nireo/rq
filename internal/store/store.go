@@ -152,6 +152,49 @@ func (s *store) GetNext(topic []byte) (*Value, uint64, error) {
 	return val, inserted, nil
 }
 
+func (s *store) Insert(topic []byte, val *Value) error {
+	s.Lock()
+	defer s.Unlock()
+
+	tailKey := encodeKeyWithOffset(primaryPrefix, topic, tailIndicator)
+	exists, err := s.db.Has(tailKey, nil)
+	if err != nil {
+		return fmt.Errorf("checking existance failed: %v", err)
+	}
+
+	if exists {
+		if _, err := appendValue(s.db, topic, val); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	headKey := encodeKeyWithOffset(primaryPrefix, topic, headIndicator)
+	emptyU64 := make([]byte, 8)
+	if err := s.db.Put(headKey, emptyU64, nil); err != nil {
+		return err
+	}
+
+	ackTailKey := encodeKeyWithOffset(ackPrefix, topic, tailIndicator)
+	if err := s.db.Put(ackTailKey, emptyU64, nil); err != nil {
+		return err
+	}
+
+	emptyU64[0] = 1
+	if err := s.db.Put(tailKey, emptyU64, nil); err != nil {
+		return err
+	}
+	newKey := encodeKeyWithOffset(primaryPrefix, topic, 0)
+	b := val.Encode()
+
+	if err := s.db.Put(newKey, b, nil); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func getValue(db leveldbCommon, topic []byte, offset uint64) (*Value, error) {
 	key := encodeKeyWithOffset(primaryPrefix, topic, offset)
 	valBytes, err := db.Get(key, nil)
