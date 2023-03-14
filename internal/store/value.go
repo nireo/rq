@@ -29,3 +29,9 @@ func Decode(buf []byte) *Value {
 		Raw:   buf[dacksSize:],
 	}
 }
+
+func newValue(data []byte) *Value {
+	return &Value{
+		Raw: data,
+	}
+}

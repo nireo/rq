@@ -140,7 +140,7 @@ func (s *store) GetNext(topic []byte) (*Value, uint64, error) {
 		return nil, 0, err
 	}
 
-	inserted, err := appendValue(s.db, topic, val)
+	inserted, err := appendValue(s.db, ackPrefix, topic, val)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -163,7 +163,7 @@ func (s *store) Insert(topic []byte, val *Value) error {
 	}
 
 	if exists {
-		if _, err := appendValue(s.db, topic, val); err != nil {
+		if _, err := appendValue(s.db, primaryPrefix, topic, val); err != nil {
 			return err
 		}
 
@@ -237,17 +237,16 @@ func addPos(db leveldbCommon, topic []byte, sum int) (uint64, uint64, error) {
 	return oldPos, uint64(newPos), nil
 }
 
-func appendValue(db leveldbCommon, topic []byte, val *Value) (uint64, error) {
-	key := encodeKeyWithOffset(primaryPrefix, topic, tailIndicator)
+func appendValue(db leveldbCommon, topicPrefix int,  topic []byte, val *Value) (uint64, error) {
+	tailPosKey := encodeKeyWithOffset(topicPrefix, topic, tailIndicator)
 
-	tailPosVal, err := db.Get(key, nil)
+	tailPosVal, err := db.Get(tailPosKey, nil)
 	if err != nil {
 		return 0, fmt.Errorf("error getting tail value: %v", err)
 	}
 
 	origOffset := binary.LittleEndian.Uint64(tailPosVal)
-	newKey := encodeKeyWithOffset(primaryPrefix, topic, origOffset)
-
+	newKey := encodeKeyWithOffset(topicPrefix, topic, origOffset)
 	b := val.Encode()
 
 	if err := db.Put(newKey, b, nil); err != nil {
@@ -256,7 +255,7 @@ func appendValue(db leveldbCommon, topic []byte, val *Value) (uint64, error) {
 
 	tail := make([]byte, 8)
 	binary.LittleEndian.PutUint64(tail, origOffset+1)
-	if err := db.Put(key, tail, nil); err != nil {
+	if err := db.Put(tailPosKey, tail, nil); err != nil {
 		return 0, fmt.Errorf("putting new tail position: %v", err)
 	}
 
