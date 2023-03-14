@@ -6,10 +6,12 @@ import (
 	"github.com/nireo/rq/internal/store"
 )
 
+type EvType int
+
 const (
-	evPub = iota
-	evNack
-	evRet
+	EvPub EvType = iota
+	EvNack
+	EvRet
 )
 
 type Consumer struct {
@@ -17,7 +19,7 @@ type Consumer struct {
 	Topic       []byte
 	AckOffset   uint64
 	Store       store.Store
-	evChan      chan int
+	EvChan      chan EvType
 	Outstanding bool
 }
 
@@ -37,8 +39,4 @@ func (c *Consumer) Nack() error {
 	c.Outstanding = false
 
 	return nil
-}
-
-func (c *Consumer) EventChan() <-chan int {
-	return c.evChan
 }
