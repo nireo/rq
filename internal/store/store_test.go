@@ -7,13 +7,17 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var (
+  testTopic = []byte("testtopic")
+)
+
 func TestInsert_Single(t *testing.T) {
 	store := newTestStore(t)
 
-	err := store.Insert([]byte("topic"), newValue([]byte("new_value")))
+	err := store.Insert(testTopic, newValue([]byte("new_value")))
 	assert.NoError(t, err)
 
-	val, _, err := store.GetNext([]byte("topic"))
+	val, _, err := store.GetNext(testTopic)
 	assert.NoError(t, err)
 
 	assert.Equal(t, "new_value", string(val.Raw))
@@ -21,7 +25,6 @@ func TestInsert_Single(t *testing.T) {
 
 func TestGetNext(t *testing.T) {
 	store := newTestStore(t)
-	topic := []byte("topic")
 
 	var (
 		msg1 = newValue([]byte("test_value_1"))
@@ -29,9 +32,9 @@ func TestGetNext(t *testing.T) {
 		msg3 = newValue([]byte("test_value_3"))
 	)
 
-	assert.NoError(t, store.Insert(topic, msg1))
-	assert.NoError(t, store.Insert(topic, msg2))
-	assert.NoError(t, store.Insert(topic, msg3))
+	assert.NoError(t, store.Insert(testTopic, msg1))
+	assert.NoError(t, store.Insert(testTopic, msg2))
+	assert.NoError(t, store.Insert(testTopic, msg3))
 
 	val, offset, err := store.GetNext([]byte("topic"))
 	assert.NoError(t, err)
@@ -47,6 +50,30 @@ func TestGetNext(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, msg3, val)
 	assert.Equal(t, uint64(2), offset)
+}
+
+func TestAck(t *testing.T) {
+  store := newTestStore(t).(*store)
+
+  ackOffset := uint64(1)
+  key := encodeKeyWithOffset(ackPrefix, testTopic, ackOffset)
+  assert.NoError(t, store.db.Put(key, []byte("ack_event"), nil))
+
+  assert.NoError(t, store.Ack(testTopic, ackOffset))
+
+  has, err := store.db.Has(key, nil)
+  assert.NoError(t, err)
+  assert.False(t, has)
+}
+
+func TestNack(t *testing.T) {
+  s := newTestStore(t)
+
+  assert.NoError(t, s.Insert(testTopic, newValue([]byte("test_value_1"))))
+  _, offset, err := s.GetNext(testTopic)
+  assert.NoError(t, err)
+
+  assert.NoError(t, s.Nack(testTopic, offset))
 }
 
 func newTestStore(t *testing.T) Store {
