@@ -30,7 +30,7 @@ func Decode(buf []byte) *Value {
 	}
 }
 
-func newValue(data []byte) *Value {
+func NewValue(data []byte) *Value {
 	return &Value{
 		Raw: data,
 	}

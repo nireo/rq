@@ -23,6 +23,7 @@ var (
 	ErrKeyDoesntExist = errors.New("key doesn't exist")
 )
 
+//go:generate mockgen -source=$GOFILE -destination=store_mock.go -package=store
 type Store interface {
 	Insert(topic []byte, val *Value) error
 	Ack(topic []byte, offset uint64) error

@@ -14,7 +14,7 @@ var (
 func TestInsert_Single(t *testing.T) {
 	store := newTestStore(t)
 
-	err := store.Insert(testTopic, newValue([]byte("new_value")))
+	err := store.Insert(testTopic, NewValue([]byte("new_value")))
 	assert.NoError(t, err)
 
 	val, _, err := store.GetNext(testTopic)
@@ -27,9 +27,9 @@ func TestGetNext(t *testing.T) {
 	store := newTestStore(t)
 
 	var (
-		msg1 = newValue([]byte("test_value_1"))
-		msg2 = newValue([]byte("test_value_2"))
-		msg3 = newValue([]byte("test_value_3"))
+		msg1 = NewValue([]byte("test_value_1"))
+		msg2 = NewValue([]byte("test_value_2"))
+		msg3 = NewValue([]byte("test_value_3"))
 	)
 
 	assert.NoError(t, store.Insert(testTopic, msg1))
@@ -69,7 +69,7 @@ func TestAck(t *testing.T) {
 func TestNack(t *testing.T) {
   s := newTestStore(t)
 
-  assert.NoError(t, s.Insert(testTopic, newValue([]byte("test_value_1"))))
+  assert.NoError(t, s.Insert(testTopic, NewValue([]byte("test_value_1"))))
   _, offset, err := s.GetNext(testTopic)
   assert.NoError(t, err)
 
